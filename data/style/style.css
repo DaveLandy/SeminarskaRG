@@ -1,11 +1,18 @@
 #content {
 	width: 100%;
 	text-align: center;
+	position: relative;
+}
+
+#hud {
+	position: absolute;
+	top: 0%;
+	left: 0.7%;
+	z-index: !important;
 }
 
 canvas {
 	display: inline;
-	border: 1px solid black;
 }
 
 h1 {
