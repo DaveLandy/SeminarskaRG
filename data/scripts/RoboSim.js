@@ -40,9 +40,9 @@ var intervalID;
 
 //Robot (enemy) variables
 var respawnTime = 1500; // respawn values when robots die
-var robotRespawnTimer = [1000,1000,1500,1500]; // initial respawn values
+var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
-var arrayRobots = {};
+var arrayRobots = [null,null,null,null];
 function Robot(x,z) {
   this.xPosition = x;
   this.yPosition = 0; //vertical position (not needed)
@@ -551,9 +551,8 @@ function start() {
     // Set up to draw the scene periodically.
     intervalID = setInterval(function() {
       if (texturesLoaded) { // only draw scene and animate when textures are loaded.
-        handleKeys();
         requestAnimationFrame(animate);
-        //handleKeys();
+        handleKeys();
         drawScene();
       }
     }, 15);
@@ -598,30 +597,65 @@ function repopulate() {
 }
 
 function moveRobots() {
-  for(var i in arrayRobots) {
-    if(arrayRobots[i] != null) {
-      //preracun smeri gledanja robota (yaw)
-      //arrayRobots[i].yaw = 
-      //premik v smeri x
-      if(arrayRobots[i].xPosition > xPosition) {
-        arrayRobots[i].xPosition -= arrayRobots[i].speed;
-      } else if(arrayRobots[i].xPosition < xPosition) {
-        arrayRobots[i].xPosition += arrayRobots[i].speed;
-      }
-      //premik v smeri z
-      if(arrayRobots[i].zPosition > zPosition) {
-        arrayRobots[i].zPosition -= arrayRobots[i].speed;
-      } else if(arrayRobots[i].zPosition < zPosition) {
-        arrayRobots[i].zPosition += arrayRobots[i].speed;
-      }
-    }
-  }
   console.clear();
   console.log("MY X: "+xPosition+", MY Z: "+zPosition);
-  console.log("xPosition0: "+arrayRobots[0].xPosition+", zPosition: "+arrayRobots[0].zPosition);
-  console.log("xPosition1: "+arrayRobots[1].xPosition+", zPosition: "+arrayRobots[1].zPosition);
-  console.log("xPosition2: "+arrayRobots[2].xPosition+", zPosition: "+arrayRobots[2].zPosition);
-  console.log("xPosition3: "+arrayRobots[3].xPosition+", zPosition: "+arrayRobots[3].zPosition);
+  
+  if(arrayRobots[0] != null) {
+    if(arrayRobots[0].xPosition > xPosition) {
+      arrayRobots[0].xPosition -= arrayRobots[0].speed;
+    } else if(arrayRobots[0].xPosition < xPosition) {
+      arrayRobots[0].xPosition += arrayRobots[0].speed;
+    }
+    //premik v smeri z
+    if(arrayRobots[0].zPosition > zPosition) {
+      arrayRobots[0].zPosition -= arrayRobots[0].speed;
+    } else if(arrayRobots[0].zPosition < zPosition) {
+      arrayRobots[0].zPosition += arrayRobots[0].speed;
+    }
+    console.log("xPosition0: "+arrayRobots[0].xPosition+", zPosition: "+arrayRobots[0].zPosition);
+  }
+  if(arrayRobots[1] != null) {
+    if(arrayRobots[1].xPosition > xPosition) {
+      arrayRobots[1].xPosition -= arrayRobots[1].speed;
+    } else if(arrayRobots[1].xPosition < xPosition) {
+      arrayRobots[1].xPosition += arrayRobots[1].speed;
+    }
+    //premik v smeri z
+    if(arrayRobots[1].zPosition > zPosition) {
+      arrayRobots[1].zPosition -= arrayRobots[1].speed;
+    } else if(arrayRobots[1].zPosition < zPosition) {
+      arrayRobots[1].zPosition += arrayRobots[1].speed;
+    }
+    console.log("xPosition1: "+arrayRobots[1].xPosition+", zPosition: "+arrayRobots[1].zPosition);
+  }
+  if(arrayRobots[2] != null) {
+    if(arrayRobots[2].xPosition > xPosition) {
+      arrayRobots[2].xPosition -= arrayRobots[2].speed;
+    } else if(arrayRobots[2].xPosition < xPosition) {
+      arrayRobots[2].xPosition += arrayRobots[2].speed;
+    }
+    //premik v smeri z
+    if(arrayRobots[2].zPosition > zPosition) {
+      arrayRobots[2].zPosition -= arrayRobots[2].speed;
+    } else if(arrayRobots[2].zPosition < zPosition) {
+      arrayRobots[2].zPosition += arrayRobots[2].speed;
+    }
+    console.log("xPosition2: "+arrayRobots[2].xPosition+", zPosition: "+arrayRobots[2].zPosition);
+  }
+  if(arrayRobots[3] != null) {
+    if(arrayRobots[3].xPosition > xPosition) {
+      arrayRobots[3].xPosition -= arrayRobots[3].speed;
+    } else if(arrayRobots[3].xPosition < xPosition) {
+      arrayRobots[3].xPosition += arrayRobots[3].speed;
+    }
+    //premik v smeri z
+    if(arrayRobots[3].zPosition > zPosition) {
+      arrayRobots[3].zPosition -= arrayRobots[3].speed;
+    } else if(arrayRobots[3].zPosition < zPosition) {
+      arrayRobots[3].zPosition += arrayRobots[3].speed;
+    }
+    console.log("xPosition3: "+arrayRobots[3].xPosition+", zPosition: "+arrayRobots[3].zPosition);
+  }
 }
 
 function destroyRobot(numberOfRobotToDestroy) {
