@@ -36,13 +36,13 @@ var hasShot = false;
 var joggingAngle = 0;
 
 //Game over variable
-var gameOver = false;
 var intervalID;
 
 //Robot (enemy) variables
-var liveRobots = -1;
-var arrayRobots = {};
+var respawnTime = 1500; // respawn values when robots die
+var robotRespawnTimer = [1000,1000,1500,1500]; // initial respawn values
 
+var arrayRobots = {};
 function Robot(x,z) {
   this.xPosition = x;
   this.yPosition = 0; //vertical position (not needed)
@@ -364,7 +364,16 @@ function animate() {
     var zTmpSideSpeed = Math.cos(degToRad(yaw-90)) * sideSpeed * elapsed;
     //create destroyed robots or notExisting ones
     repopulate();
+    gameOverCheck();
     moveRobots();
+    gameOverCheck();
+    
+    if (xPosition > 10) {
+      xPosition = 0;
+    }
+    if (zPosition > 10) {
+      zPosition = 0;
+    }
     
     if (speed != 0 || sideSpeed != 0) {
       if (xPosition < 9.8 && xPosition > -9.8) {
@@ -452,8 +461,9 @@ function handleKeys() {
   //Shoot
   if (currentlyPressedKeys[32]) {
     if(!hasShot) {
-      //TO-DO call shoot function
-      console.log("X pos: "+xPosition+" , Y pos: "+yPosition+" ,Z pos: "+zPosition);
+      
+      checkIfShot();
+      destroyRobot(0);
       //console.log("PEEEW");
       hud();
       hasShot = true;
@@ -541,8 +551,9 @@ function start() {
     // Set up to draw the scene periodically.
     intervalID = setInterval(function() {
       if (texturesLoaded) { // only draw scene and animate when textures are loaded.
-        requestAnimationFrame(animate);
         handleKeys();
+        requestAnimationFrame(animate);
+        //handleKeys();
         drawScene();
       }
     }, 15);
@@ -552,28 +563,73 @@ function start() {
 //checks if the game is over
 // further: check if one of the four robots is 0.7 near player on x or z axis
 function gameOverCheck() {
-  
-  hudGameOver();
+  for(var i in arrayRobots) {
+    if(arrayRobots[i] != null) {
+      if(Math.abs(arrayRobots[i].xPosition-xPosition) < 0.2 && Math.abs(arrayRobots[i].zPosition-zPosition) < 0.2) {
+        hudGameOver();
+      }
+    }
+  }
 }
 
 //Robot functions
 //creates new robos, alive ones are left to live another day :)
 function repopulate() {
-  if (arrayRobots[0] == null) {
+  if (arrayRobots[0] == null && robotRespawnTimer[0] == 0) {
     arrayRobots[0] = new Robot(10,10);
+  } else if(robotRespawnTimer[0] > 0) {
+    robotRespawnTimer[0]--;
   }
-  if (arrayRobots[1] == null) {
+  if (arrayRobots[1] == null && robotRespawnTimer[1] == 0) {
     arrayRobots[1] = new Robot(10,-10);
+  } else if(robotRespawnTimer[1] > 0) {
+    robotRespawnTimer[1]--;
   }
-  if (arrayRobots[2] == null) {
+  if (arrayRobots[2] == null && robotRespawnTimer[2] == 0) {
     arrayRobots[2] = new Robot(-10,10);
+  } else if(robotRespawnTimer[2] > 0) {
+    robotRespawnTimer[2]--;
   }
-  if (arrayRobots[3] == null) {
+  if (arrayRobots[3] == null && robotRespawnTimer[3] == 0) {
     arrayRobots[3] = new Robot(-10,-10);
+  } else if(robotRespawnTimer[3] > 0) {
+    robotRespawnTimer[3]--;
   }
 }
+
 function moveRobots() {
-  
+  for(var i in arrayRobots) {
+    if(arrayRobots[i] != null) {
+      //preracun smeri gledanja robota (yaw)
+      //arrayRobots[i].yaw = 
+      //premik v smeri x
+      if(arrayRobots[i].xPosition > xPosition) {
+        arrayRobots[i].xPosition -= arrayRobots[i].speed;
+      } else if(arrayRobots[i].xPosition < xPosition) {
+        arrayRobots[i].xPosition += arrayRobots[i].speed;
+      }
+      //premik v smeri z
+      if(arrayRobots[i].zPosition > zPosition) {
+        arrayRobots[i].zPosition -= arrayRobots[i].speed;
+      } else if(arrayRobots[i].zPosition < zPosition) {
+        arrayRobots[i].zPosition += arrayRobots[i].speed;
+      }
+    }
+  }
   console.clear();
-  console.log("xPosition: "+arrayRobots[0].xPosition+", yPosition: "+arrayRobots[0].xPosition);
+  console.log("MY X: "+xPosition+", MY Z: "+zPosition);
+  console.log("xPosition0: "+arrayRobots[0].xPosition+", zPosition: "+arrayRobots[0].zPosition);
+  console.log("xPosition1: "+arrayRobots[1].xPosition+", zPosition: "+arrayRobots[1].zPosition);
+  console.log("xPosition2: "+arrayRobots[2].xPosition+", zPosition: "+arrayRobots[2].zPosition);
+  console.log("xPosition3: "+arrayRobots[3].xPosition+", zPosition: "+arrayRobots[3].zPosition);
+}
+
+function destroyRobot(numberOfRobotToDestroy) {
+  enemiesKilled++;
+  arrayRobots[numberOfRobotToDestroy] = null;
+  robotRespawnTimer[numberOfRobotToDestroy] = respawnTime;
+}
+
+function checkIfShot() {
+  
 }
