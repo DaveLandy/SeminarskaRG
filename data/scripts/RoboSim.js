@@ -151,6 +151,7 @@ function getShader(gl, id) {
   } else if (shaderScript.type == "x-shader/x-vertex") {
     shader = gl.createShader(gl.VERTEX_SHADER);
   } else {
+    console.log("Unknown shader type.");
     return null;  // Unknown shader type
   }
 
@@ -245,7 +246,7 @@ function handleTextureLoaded(texture) {
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  //gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.generateMipmap(gl.TEXTURE_2D);
 
   gl.bindTexture(gl.TEXTURE_2D, null);
@@ -464,6 +465,7 @@ function handleKeyUp(event) {
 function handleKeys() {
   
   //REMOVE IN FUTURE LEAVE FOR NOW FOR TESTING
+  /*
   if (currentlyPressedKeys[33]) {
     // Page Up
     pitchRate = 0.1;
@@ -473,6 +475,7 @@ function handleKeys() {
   } else {
     pitchRate = 0;
   }
+  */
   //END REMOVAL
   
   //Look left/right
