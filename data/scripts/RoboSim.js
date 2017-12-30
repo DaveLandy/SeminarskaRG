@@ -39,8 +39,8 @@ var joggingAngle = 0;
 var intervalID;
 
 //Robot (enemy) variables
-var respawnTime = 1000; // respawn values when robots die
-var robotRespawnTimer = [150,99999999,99999999,99999999];
+var respawnTime = 300; // respawn values when robots die
+var robotRespawnTimer = [150,9999999,9999999,9999999];
 //var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
 var arrayRobots = [null,null,null,null];
@@ -56,6 +56,7 @@ function Robot(x,z) {
 var existsBullet = null;
 function Bullet(x,z,yaw) {
   this.xPosition = x;
+  this.yPosition = 0.5;
   this.zPosition = z;
   this.yaw = yaw;
   this.speed = 0.05;
@@ -327,10 +328,10 @@ function drawScene() {
   }
   
   // Establish the perspective with which we want to view the
-  // scene. Our field of view is 45 degrees, with a width/height
+  // scene. Our field of view is 60 degrees, with a width/height
   // ratio of 640:480, and we only want to see objects between 0.1 units
-  // and 50 units away from the camera.
-  mat4.perspective(60, gl.viewportWidth / gl.viewportHeight, 0.1, 50.0, pMatrix);
+  // and 30 units away from the camera.
+  mat4.perspective(60, gl.viewportWidth / gl.viewportHeight, 0.1, 30.0, pMatrix);
 
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
@@ -377,6 +378,7 @@ function animate() {
     var zTmpSideSpeed = Math.cos(degToRad(yaw-90)) * sideSpeed * elapsed;
     //create destroyed robots or notExisting ones
     repopulate();
+    recalculateYawRobots();
     moveBullet(elapsed);
     checkIfShot();
     gameOverCheck();
@@ -398,7 +400,7 @@ function animate() {
         xPosition -= xTmpSideSpeed;
         
         joggingAngle += elapsed * 0.6;
-        yPosition = Math.sin(degToRad(joggingAngle)) / 20 + 0.4;
+        yPosition = Math.sin(degToRad(joggingAngle)) / 20 + 1;
       } else if (xPosition < 9.9 && xTmpSpeed<0) {
         xPosition -= xTmpSpeed;
       } else if (xPosition < 9.9 && xTmpSideSpeed<0) {
@@ -421,8 +423,15 @@ function animate() {
         zPosition -= zTmpSideSpeed;
       }
     }
-
+    
     yaw += yawRate * elapsed;
+    //Popravek yaw da je od 0 - 360
+    if(yaw >= 360) {
+      yaw -= 360;
+    }
+    if(yaw < 0) {
+      yaw += 360;
+    }
     pitch += pitchRate * elapsed;
 
   }
@@ -663,12 +672,12 @@ function repopulate() {
     robotRespawnTimer[1]--;
   }
   if (arrayRobots[2] == null && robotRespawnTimer[2] == 0) {
-    arrayRobots[2] = new Robot(-10,10);
+    arrayRobots[2] = new Robot(-10,-10);
   } else if(robotRespawnTimer[2] > 0) {
     robotRespawnTimer[2]--;
   }
   if (arrayRobots[3] == null && robotRespawnTimer[3] == 0) {
-    arrayRobots[3] = new Robot(-10,-10);
+    arrayRobots[3] = new Robot(-10,10);
   } else if(robotRespawnTimer[3] > 0) {
     robotRespawnTimer[3]--;
   }
@@ -676,7 +685,7 @@ function repopulate() {
 
 function moveRobots() {
   //console.clear();
-  //console.log("MY X: "+xPosition+", MY Z: "+zPosition);
+  //console.log("MY X: "+xPosition+", MY Z: "+zPosition+", MY YAW: "+yaw);
   
   if(arrayRobots[0] != null) {
     if(arrayRobots[0].xPosition > xPosition) {
@@ -690,6 +699,7 @@ function moveRobots() {
     } else if(arrayRobots[0].zPosition < zPosition) {
       arrayRobots[0].zPosition += arrayRobots[0].speed;
     }
+    //console.log("Yaw: "+arrayRobots[0].yaw);
     //console.log("xPosition0: "+arrayRobots[0].xPosition+", zPosition: "+arrayRobots[0].zPosition);
   }
   if(arrayRobots[1] != null) {
@@ -704,6 +714,7 @@ function moveRobots() {
     } else if(arrayRobots[1].zPosition < zPosition) {
       arrayRobots[1].zPosition += arrayRobots[1].speed;
     }
+    //console.log("Yaw: "+arrayRobots[1].yaw);
     //console.log("xPosition1: "+arrayRobots[1].xPosition+", zPosition: "+arrayRobots[1].zPosition);
   }
   if(arrayRobots[2] != null) {
@@ -718,6 +729,7 @@ function moveRobots() {
     } else if(arrayRobots[2].zPosition < zPosition) {
       arrayRobots[2].zPosition += arrayRobots[2].speed;
     }
+    //console.log("Yaw: "+arrayRobots[2].yaw);
     //console.log("xPosition2: "+arrayRobots[2].xPosition+", zPosition: "+arrayRobots[2].zPosition);
   }
   if(arrayRobots[3] != null) {
@@ -732,6 +744,7 @@ function moveRobots() {
     } else if(arrayRobots[3].zPosition < zPosition) {
       arrayRobots[3].zPosition += arrayRobots[3].speed;
     }
+    //console.log("Yaw: "+arrayRobots[3].yaw);
     //console.log("xPosition3: "+arrayRobots[3].xPosition+", zPosition: "+arrayRobots[3].zPosition);
   }
 }
@@ -742,6 +755,30 @@ function destroyRobot(numberOfRobotToDestroy) {
   robotRespawnTimer[numberOfRobotToDestroy] = respawnTime;
 }
 
+function radToDeg(rad) {
+  return rad*180/Math.PI;
+}
+
+function recalculateYawRobots(i) {
+  for(var i in arrayRobots) {
+    if(arrayRobots[i] != null) {
+      if(arrayRobots[i].xPosition > xPosition && arrayRobots[i].zPosition > zPosition) {
+        //spodnji desni kvadrant
+        arrayRobots[i].yaw = radToDeg(Math.atan(Math.abs(arrayRobots[i].xPosition - xPosition) / Math.abs(arrayRobots[i].zPosition - zPosition)));
+      } else if(arrayRobots[i].xPosition > xPosition && arrayRobots[i].zPosition < zPosition) {
+        //zgornji desni kvadrant
+        arrayRobots[i].yaw = 180 - radToDeg(Math.atan(Math.abs(arrayRobots[i].xPosition - xPosition) / Math.abs(arrayRobots[i].zPosition - zPosition)));
+      } else if(arrayRobots[i].xPosition < xPosition && arrayRobots[i].zPosition < zPosition) {
+        //zgornji levi kvadrant
+        arrayRobots[i].yaw = 180 + radToDeg(Math.atan(Math.abs(arrayRobots[i].xPosition - xPosition) / Math.abs(arrayRobots[i].zPosition - zPosition)));
+      } else if(arrayRobots[i].xPosition < xPosition && arrayRobots[i].zPosition > zPosition) {
+        //spodnji levi kvadrant
+        arrayRobots[i].yaw = 360 - radToDeg(Math.atan(Math.abs(arrayRobots[i].xPosition - xPosition) / Math.abs(arrayRobots[i].zPosition - zPosition)));
+      }
+    }
+  }
+}
+
 function checkIfShot() {
   var shotSensitivity = 0.5;
   if(existsBullet != null) {
@@ -749,28 +786,28 @@ function checkIfShot() {
       if(Math.abs(arrayRobots[0].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[0].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(0);
         hitIndicatorAlpha = 1.0;
-        console.log("Robot 0 Destroyed");
+        //console.log("Robot 0 Destroyed");
       }
     }
     if(arrayRobots[1] != null) {
       if(Math.abs(arrayRobots[1].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[1].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(1);
         hitIndicatorAlpha = 1.0;
-        console.log("Robot 1 Destroyed");
+        //console.log("Robot 1 Destroyed");
       }
     }
     if(arrayRobots[2] != null) {
       if(Math.abs(arrayRobots[2].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[2].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(2);
         hitIndicatorAlpha = 1.0;
-        console.log("Robot 2 Destroyed");
+        //console.log("Robot 2 Destroyed");
       }
     }
     if(arrayRobots[3] != null) {
       if(Math.abs(arrayRobots[3].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[3].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(3);
         hitIndicatorAlpha = 1.0;
-        console.log("Robot 3 Destroyed");
+        //console.log("Robot 3 Destroyed");
       }
     }
   }
