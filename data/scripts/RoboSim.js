@@ -40,15 +40,26 @@ var intervalID;
 
 //Robot (enemy) variables
 var respawnTime = 1500; // respawn values when robots die
-var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
+var robotRespawnTimer = [150,999999999,999999999,999999999];
+//var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
 var arrayRobots = [null,null,null,null];
 function Robot(x,z) {
   this.xPosition = x;
-  this.yPosition = 0; //vertical position (not needed)
+  this.yPosition = 0; //vertical position (not needed) maybe ce bos rabu premaknt objekt gor al pa dol David
   this.zPosition = z;
   this.yaw = 0;
   this.speed = 0.01; //increase this if (too easy)
+}
+
+//Bullet variables
+var existsBullet = null;
+function Bullet(x,z,yaw) {
+  this.xPosition = x;
+  this.zPosition = z;
+  this.yaw = yaw;
+  this.speed = 0.05;
+  this.lifeSpan = 30;
 }
 
 //HUD variables
@@ -364,8 +375,11 @@ function animate() {
     var zTmpSideSpeed = Math.cos(degToRad(yaw-90)) * sideSpeed * elapsed;
     //create destroyed robots or notExisting ones
     repopulate();
+    moveBullet(elapsed);
+    checkIfShot();
     gameOverCheck();
     moveRobots();
+    checkIfShot();
     gameOverCheck();
     
     if (xPosition > 10) {
@@ -462,9 +476,10 @@ function handleKeys() {
   if (currentlyPressedKeys[32]) {
     if(!hasShot) {
       
-      checkIfShot();
-      destroyRobot(0);
-      //console.log("PEEEW");
+      if(existsBullet == null) {
+        existsBullet = new Bullet(xPosition,zPosition,yaw);
+      }
+      
       hud();
       hasShot = true;
     }
@@ -571,6 +586,20 @@ function gameOverCheck() {
   }
 }
 
+//Bullet functions
+function moveBullet(elapsed) {
+  if(existsBullet != null) {
+    if (existsBullet.lifeSpan <= 0) {
+      existsBullet = null;
+    } else {
+      existsBullet.lifeSpan--;
+      existsBullet.xPosition -= Math.sin(degToRad(existsBullet.yaw)) * existsBullet.speed * elapsed;
+      existsBullet.zPosition -= Math.cos(degToRad(existsBullet.yaw)) * existsBullet.speed * elapsed;
+      console.log("Bullet x: "+existsBullet.xPosition+", z: "+existsBullet.zPosition);
+    }
+  }
+}
+
 //Robot functions
 //creates new robos, alive ones are left to live another day :)
 function repopulate() {
@@ -597,8 +626,8 @@ function repopulate() {
 }
 
 function moveRobots() {
-  console.clear();
-  console.log("MY X: "+xPosition+", MY Z: "+zPosition);
+  //console.clear();
+  //console.log("MY X: "+xPosition+", MY Z: "+zPosition);
   
   if(arrayRobots[0] != null) {
     if(arrayRobots[0].xPosition > xPosition) {
@@ -665,5 +694,30 @@ function destroyRobot(numberOfRobotToDestroy) {
 }
 
 function checkIfShot() {
-  
+  if(existsBullet != null) {
+    if(arrayRobots[0] != null) {
+      if(Math.abs(arrayRobots[0].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[0].zPosition - existsBullet.zPosition) < 0.5) {
+        destroyRobot(0);
+        console.log("Robot 0 Destroyed");
+      }
+    }
+    if(arrayRobots[1] != null) {
+      if(Math.abs(arrayRobots[1].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[1].zPosition - existsBullet.zPosition) < 0.5) {
+        destroyRobot(1);
+        console.log("Robot 1 Destroyed");
+      }
+    }
+    if(arrayRobots[2] != null) {
+      if(Math.abs(arrayRobots[2].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[2].zPosition - existsBullet.zPosition) < 0.5) {
+        destroyRobot(2);
+        console.log("Robot 2 Destroyed");
+      }
+    }
+    if(arrayRobots[3] != null) {
+      if(Math.abs(arrayRobots[3].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[3].zPosition - existsBullet.zPosition) < 0.5) {
+        destroyRobot(3);
+        console.log("Robot 3 Destroyed");
+      }
+    }
+  }
 }
