@@ -40,7 +40,7 @@ var intervalID;
 
 //Robot (enemy) variables
 var respawnTime = 1500; // respawn values when robots die
-var robotRespawnTimer = [150,999999999,999999999,999999999];
+var robotRespawnTimer = [999999999,999999999,999999999,999999999];
 //var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
 var arrayRobots = [null,null,null,null];
@@ -512,6 +512,18 @@ function hud() {
   ctx.fillStyle = "#ff0000";
   ctx.clearRect(0,0,1280,720);
   ctx.fillText("ENEMIES KILLED: "+enemiesKilled,30,50);
+  
+  //crosshair
+  ctx.fillStyle = "#0070ff";  //prijetno moder
+  //ctx.fillStyle = "#fff000"; //rumen
+  ctx.beginPath();
+  ctx.arc(640,349,2,0,2*Math.PI);
+  ctx.lineWidth = 0;
+  ctx.fill();
+  ctx.fillRect(638,334,4,10);
+  ctx.fillRect(638,354,4,10);
+  ctx.fillRect(644,347,10,4);
+  ctx.fillRect(626,347,10,4);
 }
 
 //call this when game is over
@@ -595,7 +607,7 @@ function moveBullet(elapsed) {
       existsBullet.lifeSpan--;
       existsBullet.xPosition -= Math.sin(degToRad(existsBullet.yaw)) * existsBullet.speed * elapsed;
       existsBullet.zPosition -= Math.cos(degToRad(existsBullet.yaw)) * existsBullet.speed * elapsed;
-      console.log("Bullet x: "+existsBullet.xPosition+", z: "+existsBullet.zPosition);
+      //console.log("Bullet x: "+existsBullet.xPosition+", z: "+existsBullet.zPosition);
     }
   }
 }
@@ -641,7 +653,7 @@ function moveRobots() {
     } else if(arrayRobots[0].zPosition < zPosition) {
       arrayRobots[0].zPosition += arrayRobots[0].speed;
     }
-    console.log("xPosition0: "+arrayRobots[0].xPosition+", zPosition: "+arrayRobots[0].zPosition);
+    //console.log("xPosition0: "+arrayRobots[0].xPosition+", zPosition: "+arrayRobots[0].zPosition);
   }
   if(arrayRobots[1] != null) {
     if(arrayRobots[1].xPosition > xPosition) {
@@ -655,7 +667,7 @@ function moveRobots() {
     } else if(arrayRobots[1].zPosition < zPosition) {
       arrayRobots[1].zPosition += arrayRobots[1].speed;
     }
-    console.log("xPosition1: "+arrayRobots[1].xPosition+", zPosition: "+arrayRobots[1].zPosition);
+    //console.log("xPosition1: "+arrayRobots[1].xPosition+", zPosition: "+arrayRobots[1].zPosition);
   }
   if(arrayRobots[2] != null) {
     if(arrayRobots[2].xPosition > xPosition) {
@@ -669,7 +681,7 @@ function moveRobots() {
     } else if(arrayRobots[2].zPosition < zPosition) {
       arrayRobots[2].zPosition += arrayRobots[2].speed;
     }
-    console.log("xPosition2: "+arrayRobots[2].xPosition+", zPosition: "+arrayRobots[2].zPosition);
+    //console.log("xPosition2: "+arrayRobots[2].xPosition+", zPosition: "+arrayRobots[2].zPosition);
   }
   if(arrayRobots[3] != null) {
     if(arrayRobots[3].xPosition > xPosition) {
@@ -683,7 +695,7 @@ function moveRobots() {
     } else if(arrayRobots[3].zPosition < zPosition) {
       arrayRobots[3].zPosition += arrayRobots[3].speed;
     }
-    console.log("xPosition3: "+arrayRobots[3].xPosition+", zPosition: "+arrayRobots[3].zPosition);
+    //console.log("xPosition3: "+arrayRobots[3].xPosition+", zPosition: "+arrayRobots[3].zPosition);
   }
 }
 
