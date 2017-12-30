@@ -39,8 +39,8 @@ var joggingAngle = 0;
 var intervalID;
 
 //Robot (enemy) variables
-var respawnTime = 1500; // respawn values when robots die
-var robotRespawnTimer = [999999999,999999999,999999999,999999999];
+var respawnTime = 1000; // respawn values when robots die
+var robotRespawnTimer = [150,99999999,99999999,99999999];
 //var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
 var arrayRobots = [null,null,null,null];
@@ -65,6 +65,8 @@ function Bullet(x,z,yaw) {
 //HUD variables
 var enemiesKilled = 0;
 var ctx;
+var hitIndicatorAlpha = 0.0;
+var gameOver = false;
 
 // Helper variable for animation
 var lastTime = 0;
@@ -381,6 +383,7 @@ function animate() {
     moveRobots();
     checkIfShot();
     gameOverCheck();
+    hud();
     
     if (xPosition > 10) {
       xPosition = 0;
@@ -479,8 +482,6 @@ function handleKeys() {
       if(existsBullet == null) {
         existsBullet = new Bullet(xPosition,zPosition,yaw);
       }
-      
-      hud();
       hasShot = true;
     }
   } else {
@@ -508,26 +509,62 @@ function handleKeys() {
 }
 //HUD
 function hud() {
-  ctx.font="30px Arial";
-  ctx.fillStyle = "#ff0000";
-  ctx.clearRect(0,0,1280,720);
-  ctx.fillText("ENEMIES KILLED: "+enemiesKilled,30,50);
-  
-  //crosshair
-  ctx.fillStyle = "#0070ff";  //prijetno moder
-  //ctx.fillStyle = "#fff000"; //rumen
-  ctx.beginPath();
-  ctx.arc(640,349,2,0,2*Math.PI);
-  ctx.lineWidth = 0;
-  ctx.fill();
-  ctx.fillRect(638,334,4,10);
-  ctx.fillRect(638,354,4,10);
-  ctx.fillRect(644,347,10,4);
-  ctx.fillRect(626,347,10,4);
+  if (!gameOver) {
+    ctx.font="30px Arial";
+    ctx.fillStyle = "#ff0000";
+    ctx.clearRect(0,0,1280,720);
+    ctx.fillText("ENEMIES KILLED: "+enemiesKilled,30,50);
+    
+    //crosshair
+    ctx.fillStyle = "#0070ff";  //prijetno moder
+    //ctx.fillStyle = "#fff000"; //rumen
+    ctx.beginPath();
+    ctx.arc(640,349,2,0,2*Math.PI);
+    ctx.lineWidth = 0;
+    ctx.fill();
+    ctx.fillRect(638,334,4,10);
+    ctx.fillRect(638,354,4,10);
+    ctx.fillRect(644,347,10,4);
+    ctx.fillRect(626,347,10,4);
+    
+    //Hit indicator flash
+    if(hitIndicatorAlpha > 0) {
+      ctx.strokeStyle = "#0070ff";
+      ctx.lineWidth = 4;
+      ctx.globalAlpha = hitIndicatorAlpha;
+      
+      //top right
+      ctx.beginPath();
+      ctx.moveTo(645,343);
+      ctx.lineTo(658,331);
+      ctx.stroke();
+      //top left
+      ctx.beginPath();
+      ctx.moveTo(635,343);
+      ctx.lineTo(622,331);
+      ctx.stroke();
+      //bottom left
+      ctx.beginPath();
+      ctx.moveTo(635,354);
+      ctx.lineTo(622,366);
+      ctx.stroke();
+      //bottom right
+      ctx.beginPath();
+      ctx.moveTo(645,354);
+      ctx.lineTo(658,366);
+      ctx.stroke();
+      
+      hitIndicatorAlpha -= 0.009;
+      ctx.globalAlpha = 1.0;
+    } else {
+      hitIndicatorAlpha = 0;
+    }
+  }
 }
 
 //call this when game is over
 function hudGameOver() {
+  gameOver = true;
   ctx.clearRect(0,0,1280,720);
   ctx.font="130px Arial";
   ctx.fillStyle = "#ff7500";
@@ -706,28 +743,33 @@ function destroyRobot(numberOfRobotToDestroy) {
 }
 
 function checkIfShot() {
+  var shotSensitivity = 0.5;
   if(existsBullet != null) {
     if(arrayRobots[0] != null) {
-      if(Math.abs(arrayRobots[0].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[0].zPosition - existsBullet.zPosition) < 0.5) {
+      if(Math.abs(arrayRobots[0].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[0].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(0);
+        hitIndicatorAlpha = 1.0;
         console.log("Robot 0 Destroyed");
       }
     }
     if(arrayRobots[1] != null) {
-      if(Math.abs(arrayRobots[1].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[1].zPosition - existsBullet.zPosition) < 0.5) {
+      if(Math.abs(arrayRobots[1].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[1].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(1);
+        hitIndicatorAlpha = 1.0;
         console.log("Robot 1 Destroyed");
       }
     }
     if(arrayRobots[2] != null) {
-      if(Math.abs(arrayRobots[2].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[2].zPosition - existsBullet.zPosition) < 0.5) {
+      if(Math.abs(arrayRobots[2].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[2].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(2);
+        hitIndicatorAlpha = 1.0;
         console.log("Robot 2 Destroyed");
       }
     }
     if(arrayRobots[3] != null) {
-      if(Math.abs(arrayRobots[3].xPosition - existsBullet.xPosition) < 0.5 && Math.abs(arrayRobots[3].zPosition - existsBullet.zPosition) < 0.5) {
+      if(Math.abs(arrayRobots[3].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[3].zPosition - existsBullet.zPosition) < shotSensitivity) {
         destroyRobot(3);
+        hitIndicatorAlpha = 1.0;
         console.log("Robot 3 Destroyed");
       }
     }
