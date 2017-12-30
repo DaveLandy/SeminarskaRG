@@ -27,18 +27,33 @@ var pitchRate = 0;
 var yaw = 0;
 var yawRate = 0;
 var xPosition = 0;
-var yPosition = 0.5;
+var yPosition = 1.0;
 var zPosition = 0;
 var speed = 0;
 var sideSpeed = 0;
 var hasShot = false;
+// Used to make us "jog" up and down as we move forward.
+var joggingAngle = 0;
+
+//Game over variable
+var gameOver = false;
+var intervalID;
+
+//Robot (enemy) variables
+var liveRobots = -1;
+var arrayRobots = {};
+
+function Robot(x,z) {
+  this.xPosition = x;
+  this.yPosition = 0; //vertical position (not needed)
+  this.zPosition = z;
+  this.yaw = 0;
+  this.speed = 0.01; //increase this if (too easy)
+}
 
 //HUD variables
 var enemiesKilled = 0;
 var ctx;
-
-// Used to make us "jog" up and down as we move forward.
-var joggingAngle = 0;
 
 // Helper variable for animation
 var lastTime = 0;
@@ -301,8 +316,8 @@ function drawScene() {
   // Establish the perspective with which we want to view the
   // scene. Our field of view is 45 degrees, with a width/height
   // ratio of 640:480, and we only want to see objects between 0.1 units
-  // and 100 units away from the camera.
-  mat4.perspective(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+  // and 50 units away from the camera.
+  mat4.perspective(60, gl.viewportWidth / gl.viewportHeight, 0.1, 50.0, pMatrix);
 
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
@@ -342,18 +357,43 @@ function animate() {
   var timeNow = new Date().getTime();
   if (lastTime != 0) {
     var elapsed = timeNow - lastTime;
-
+    
+    var xTmpSpeed = Math.sin(degToRad(yaw)) * speed * elapsed;
+    var xTmpSideSpeed = Math.sin(degToRad(yaw-90)) * sideSpeed * elapsed;
+    var zTmpSpeed = Math.cos(degToRad(yaw)) * speed * elapsed;
+    var zTmpSideSpeed = Math.cos(degToRad(yaw-90)) * sideSpeed * elapsed;
+    //create destroyed robots or notExisting ones
+    repopulate();
+    moveRobots();
+    
     if (speed != 0 || sideSpeed != 0) {
-      //Add speed
-      xPosition -= Math.sin(degToRad(yaw)) * speed * elapsed;
-      zPosition -= Math.cos(degToRad(yaw)) * speed * elapsed;
-      
-      //Add sideSpeed
-      xPosition -= Math.sin(degToRad(yaw-90)) * sideSpeed * elapsed;
-      zPosition -= Math.cos(degToRad(yaw-90)) * sideSpeed * elapsed;
-
-      joggingAngle += elapsed * 0.6;
-      yPosition = Math.sin(degToRad(joggingAngle)) / 20 + 0.4
+      if (xPosition < 9.8 && xPosition > -9.8) {
+        xPosition -= xTmpSpeed;
+        xPosition -= xTmpSideSpeed;
+        
+        joggingAngle += elapsed * 0.6;
+        yPosition = Math.sin(degToRad(joggingAngle)) / 20 + 0.4;
+      } else if (xPosition < 9.9 && xTmpSpeed<0) {
+        xPosition -= xTmpSpeed;
+      } else if (xPosition < 9.9 && xTmpSideSpeed<0) {
+        xPosition -= xTmpSideSpeed;
+      } else if (xPosition > -9.9 && xTmpSpeed>0) {
+        xPosition -= xTmpSpeed;
+      } else if (xPosition > -9.9 && xTmpSideSpeed>0) {
+        xPosition -= xTmpSideSpeed;
+      }
+      if (zPosition < 9.8 && zPosition > -9.8) {
+        zPosition -= zTmpSpeed;
+        zPosition -= zTmpSideSpeed;
+      } else if (zPosition < 9.9 && zTmpSpeed<0) {
+        zPosition -= zTmpSpeed;
+      } else if (zPosition < 9.9 && zTmpSideSpeed<0) {
+        zPosition -= zTmpSideSpeed;
+      } else if (zPosition > -9.9 && zTmpSpeed>0) {
+        zPosition -= zTmpSpeed;
+      } else if (zPosition > -9.9 && zTmpSideSpeed>0) {
+        zPosition -= zTmpSideSpeed;
+      }
     }
 
     yaw += yawRate * elapsed;
@@ -388,6 +428,7 @@ function handleKeyUp(event) {
 //
 function handleKeys() {
   
+  //REMOVE IN FUTURE LEAVE FOR NOW FOR TESTING
   if (currentlyPressedKeys[33]) {
     // Page Up
     pitchRate = 0.1;
@@ -397,6 +438,7 @@ function handleKeys() {
   } else {
     pitchRate = 0;
   }
+  //END REMOVAL
   
   //Look left/right
   if (currentlyPressedKeys[81]) {
@@ -441,10 +483,22 @@ function handleKeys() {
 }
 //HUD
 function hud() {
-  ctx.font="30px bolder Arial";
+  ctx.font="30px Arial";
   ctx.fillStyle = "#ff0000";
   ctx.clearRect(0,0,1280,720);
   ctx.fillText("ENEMIES KILLED: "+enemiesKilled,30,50);
+}
+
+//call this when game is over
+function hudGameOver() {
+  ctx.clearRect(0,0,1280,720);
+  ctx.font="130px Arial";
+  ctx.fillStyle = "#ff7500";
+  ctx.fillText("GAME OVER",220,300);
+  ctx.font="30px Arial";
+  ctx.fillStyle = "#ff0000";
+  ctx.fillText("YOU KILLED: "+enemiesKilled+" ENEMIES",450,500);
+  clearInterval(intervalID);
 }
 
 
@@ -457,7 +511,7 @@ function hud() {
 function start() {
   canvas = document.getElementById("glcanvas");
   //initiate HUD
-  tmp = document.getElementById("hud");
+  var tmp = document.getElementById("hud");
   ctx = tmp.getContext("2d");
   hud();
   
@@ -485,7 +539,7 @@ function start() {
     document.onkeyup = handleKeyUp;
     
     // Set up to draw the scene periodically.
-    setInterval(function() {
+    intervalID = setInterval(function() {
       if (texturesLoaded) { // only draw scene and animate when textures are loaded.
         requestAnimationFrame(animate);
         handleKeys();
@@ -493,4 +547,33 @@ function start() {
       }
     }, 15);
   }
+}
+
+//checks if the game is over
+// further: check if one of the four robots is 0.7 near player on x or z axis
+function gameOverCheck() {
+  
+  hudGameOver();
+}
+
+//Robot functions
+//creates new robos, alive ones are left to live another day :)
+function repopulate() {
+  if (arrayRobots[0] == null) {
+    arrayRobots[0] = new Robot(10,10);
+  }
+  if (arrayRobots[1] == null) {
+    arrayRobots[1] = new Robot(10,-10);
+  }
+  if (arrayRobots[2] == null) {
+    arrayRobots[2] = new Robot(-10,10);
+  }
+  if (arrayRobots[3] == null) {
+    arrayRobots[3] = new Robot(-10,-10);
+  }
+}
+function moveRobots() {
+  
+  console.clear();
+  console.log("xPosition: "+arrayRobots[0].xPosition+", yPosition: "+arrayRobots[0].xPosition);
 }

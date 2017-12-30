@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<title>RoboSim</title>
@@ -45,17 +46,15 @@
 	</head>
 	<body onload="start()">
 		<h1>RoboSim</h1>
+		<div id="content2">
+			(Uporabi WASD - premik levo/desno, naprej nazaj, Space - za streljanje, QE - pogled levo/desno)
+		</div>
 		<div id="content">
 			<canvas id="glcanvas" width="1280px" height="720px">
-				No <code>&lt;canvas&gt;</code> suppport in your browser.
+				No canvas suppport in your browser.
 			</canvas>
 			<canvas id="hud" width="1280px" height="720px"></canvas>
-    		<div id="loadingtext">Loading world...</div
-			<br />
-			<br />
-			(Uporabi WASD - premik levo/desno, naprej nazaj, Space - za streljanje, QE - pogled levo/desno)
-			<br />
-			<br />
+    		<div id="loadingtext">Loading world...</div>
 		</div>
 	</body>
 </html>

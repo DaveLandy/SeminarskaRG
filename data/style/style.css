@@ -1,14 +1,28 @@
 #content {
 	width: 100%;
+	left: 2%;
 	text-align: center;
 	position: relative;
+}
+
+#content2 {
+	width: 100%;
+	text-align: left;
+	position: static;
+}
+
+#glcanvas {
+	position: absolute;
+	top: 0%;
+	left: 0%;
+	z-index: 0;
 }
 
 #hud {
 	position: absolute;
 	top: 0%;
-	left: 0.7%;
-	z-index: !important;
+	left: 0%;
+	z-index: 1;
 }
 
 canvas {
