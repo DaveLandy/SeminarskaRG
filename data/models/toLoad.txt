@@ -1,1 +1,3 @@
-world.txt
+world.json
+robot.json
+bullet.json

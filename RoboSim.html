@@ -12,35 +12,61 @@
 			precision mediump float;
 
 	    	// uniform attribute for setting texture coordinates
-			varying vec2 vTextureCoord;
+		    varying vec2 vTextureCoord;
+	    	// uniform attribute for setting lighting
+		    varying vec3 vLightWeighting;
 
 			// uniform attribute for setting 2D sampler
-			uniform sampler2D uSampler;
+		    uniform sampler2D uSampler;
 
-			void main(void) {
+		    void main(void) {
 		    	// sample the fragment color from texture
-			    gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
-			}
+		        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+		        gl_FragColor = vec4(textureColor.rgb * vLightWeighting, textureColor.a);
+		    }
 	    </script>
 
     
 	    <!-- Vertex shader program -->	    
 	    <script id="shader-vs" type="x-shader/x-vertex">
-    		// atributes for setting vertex position and texture coordinates
+    		// atributes for setting vertex position, normals and texture coordinates
 		    attribute vec3 aVertexPosition;
+		    attribute vec3 aVertexNormal;
 		    attribute vec2 aTextureCoord;
 
 		    uniform mat4 uMVMatrix;	// model-view matrix
 		    uniform mat4 uPMatrix;	// projection matrix
+		    uniform mat3 uNMatrix;	// normal matrix
 
-			// variable for passing texture coordinates
+		    uniform vec3 uAmbientColor;	// ambient color uniform
+
+		    uniform vec3 uLightingDirection;	// light direction uniform
+		    uniform vec3 uDirectionalColor;		// light color
+
+		    uniform bool uUseLighting;	// lighting switch
+
+			// variable for passing texture coordinates and lighting weights
 			// from vertex shader to fragment shader
 		    varying vec2 vTextureCoord;
+		    varying vec3 vLightWeighting;
 
 		    void main(void) {
 		    	// calculate the vertex position
 		        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
 		        vTextureCoord = aTextureCoord;
+
+		        if (!uUseLighting) {
+		            vLightWeighting = vec3(1.0, 1.0, 1.0);
+		        } else {
+		        	// transform normals
+		            vec3 transformedNormal = uNMatrix * aVertexNormal;
+
+		            // calculate weight for directional light
+		            float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
+
+		            // calculate lighting
+		            vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
+		        }
 		    }
 		</script>
 	</head>

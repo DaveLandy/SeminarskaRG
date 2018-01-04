@@ -27,7 +27,7 @@ var pitchRate = 0;
 var yaw = 0;
 var yawRate = 0;
 var xPosition = 0;
-var yPosition = 1.0;
+var yPosition = 2.0;
 var zPosition = 0;
 var speed = 0;
 var sideSpeed = 0;
@@ -40,7 +40,7 @@ var intervalID;
 
 //Robot (enemy) variables
 var respawnTime = 300; // respawn values when robots die
-var robotRespawnTimer = [150,9999999,9999999,9999999];
+var robotRespawnTimer = [150,99999999,99999999,99999999];
 //var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
 var arrayRobots = [null,null,null,null];
@@ -72,6 +72,7 @@ var gameOver = false;
 // Helper variable for animation
 var lastTime = 0;
 
+var models = {};
 //
 // Matrix utility functions
 //
@@ -211,6 +212,13 @@ function initShaders() {
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
   // store location of uSampler variable defined in shader
   shaderProgram.samplerUniform = gl.getUniformLocation(shaderProgram, "uSampler");
+  
+  shaderProgram.nMatrixUniform = gl.getUniformLocation(shaderProgram, "uNMatrix");
+  shaderProgram.useLightingUniform = gl.getUniformLocation(shaderProgram, "uUseLighting");
+  shaderProgram.ambientColorUniform = gl.getUniformLocation(shaderProgram, "uAmbientColor");
+  shaderProgram.lightingDirectionUniform = gl.getUniformLocation(shaderProgram, "uLightingDirection");
+  shaderProgram.directionalColorUniform = gl.getUniformLocation(shaderProgram, "uDirectionalColor");
+  
 }
 
 //
@@ -221,6 +229,10 @@ function initShaders() {
 function setMatrixUniforms() {
   gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
   gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+  var normal = mat3.create();
+  mat4.toInverseMat3(mvMatrix, normal);
+  mat3.transpose(normal);
+  gl.uniformMatrix3fv(shaderProgram.nMatrixUniform, false, normal);
 }
 
 //
@@ -312,11 +324,106 @@ function loadWorld() {
   request.send();
 }
 
+var toLoad;
+var loadedModels;
+var loadedTextures;
+function loadModels(path) {
+  var request = new XMLHttpRequest();
+  request.open("GET", path);
+  request.onreadystatechange = function () {
+    if (request.readyState == 4) {
+      toLoad = request.responseText.split("\n");
+      //console.log(toLoad[i]);
+      var nrmodels=3; // increase if more models to be loaded
+      loadedTextures=nrmodels;
+      loadedModels=nrmodels;
+      for(var i=0;i<nrmodels;i++) {
+        models[i] = {};
+      }
+      for(var i=0;i<nrmodels;i++) {
+        initTexture(i);
+      }
+      
+      for(var i=0;i<nrmodels;i++) {
+        initModel(i);
+      }
+    }
+  }
+  request.send();
+}
+
+function initTexture(i) {
+
+  var name = (toLoad[i].split("."))[0];
+  models[i].texture = gl.createTexture();
+  models[i].texture.image = new Image();
+  models[i].texture.image.onload = function () {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+    // Third tmpTexture usus Linear interpolation approximation with nearest Mipmap selection
+    gl.bindTexture(gl.TEXTURE_2D, models[i].texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, models[i].texture.image);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    
+    // when texture loading is finished we can draw scene.
+    loadedTextures--;
+  }
+  models[i].texture.image.src = "data/textures/"+name+".png";
+  
+}
+
+
+function initModel(countModels) {
+  var request = new XMLHttpRequest();
+  var oName = toLoad[countModels];
+  request.open("GET", "data/models/"+oName);
+  request.onreadystatechange = function () {
+    if (request.readyState == 4) {
+      console.log(countModels);
+      var object = JSON.parse(request.responseText);
+      models[countModels].vertices = new Float32Array(object.meshes[0].vertices);
+      models[countModels].texCoords = object.meshes[0].texturecoords[0];
+      
+      models[countModels].vertexBufferObject = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, models[countModels].vertexBufferObject);
+      gl.bufferData(gl.ARRAY_BUFFER, models[countModels].vertices, gl.STATIC_DRAW);
+      models[countModels].vertexBufferObject.itemSize=3;
+      models[countModels].vertexBufferObject.numItems=models[countModels].vertices.length/3;
+      
+      models[countModels].textureCoordVertexBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, models[countModels].textureCoordVertexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(models[countModels].texCoords), gl.STATIC_DRAW);
+      models[countModels].textureCoordVertexBuffer.itemSize=2;
+      models[countModels].textureCoordVertexBuffer.numItems=models[countModels].texCoords.length/2;
+      
+      var indices = [];
+      for (var i = 0; i < object.meshes[0].faces.length; i++){
+          indices.push.apply(indices,object.meshes[0].faces[i]);
+      }
+      
+      models[countModels].indexBufferObject = gl.createBuffer();
+      
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[countModels].indexBufferObject);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+      models[countModels].indexBufferObject.itemSize = 1;
+      models[countModels].indexBufferObject.numItems = indices.length;
+      loadedModels--;
+    }
+  }
+  request.send();
+}
+
+
 //
 // drawScene
 //
 // Draw the scene.
 //
+var useLight = false;
 function drawScene() {
   // set the rendering environment to full canvas size
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
@@ -324,26 +431,25 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   // If buffers are empty we stop loading the application.
-  if (worldVertexTextureCoordBuffer == null || worldVertexPositionBuffer == null) {
+  /*if (worldVertexTextureCoordBuffer == null || worldVertexPositionBuffer == null) {
     return;
-  }
-  
+  }*/
   // Establish the perspective with which we want to view the
   // scene. Our field of view is 60 degrees, with a width/height
   // ratio of 640:480, and we only want to see objects between 0.1 units
-  // and 30 units away from the camera.
-  mat4.perspective(60, gl.viewportWidth / gl.viewportHeight, 0.1, 30.0, pMatrix);
+  // and 100 units away from the camera.
+  mat4.perspective(60, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+  
+  gl.uniform1i(shaderProgram.useLightingUniform, useLight);
+  if (useLight) {
+    // TO-DO
+  }
 
-  // Set the drawing position to the "identity" point, which is
-  // the center of the scene.
-  mat4.identity(mvMatrix);
-
-  // Now move the drawing position a bit to where we want to start
-  // drawing the world.
-  mat4.rotate(mvMatrix, degToRad(-pitch), [1, 0, 0]);
-  mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
-  mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
-
+  
+  drawMap(); 
+  drawRobots();
+  drawBullets();
+  /*
   // Activate textures
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, wallTexture);
@@ -361,6 +467,126 @@ function drawScene() {
   // Draw the cube.
   setMatrixUniforms();
   gl.drawArrays(gl.TRIANGLES, 0, worldVertexPositionBuffer.numItems);
+  */
+}
+
+function drawBullets() {
+  if(existsBullet != null) {
+    //console.log("Drew robot");
+    mat4.identity(mvMatrix);
+    
+    mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
+    mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
+
+    //mat4.rotate(mvMatrix, degToRad(arrayRobots[i].yaw), [0, 0, 0]);
+		mat4.translate(mvMatrix, [existsBullet.xPosition, 0, existsBullet.zPosition]);
+		drawBullet();
+  }
+}
+function drawBullet() {
+  // Activate textures
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, models[2].texture);
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+  // Set the texture coordinates attribute for the vertices.
+  gl.bindBuffer(gl.ARRAY_BUFFER, models[2].textureCoordVertexBuffer);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, models[2].textureCoordVertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // Draw the world by binding the array buffer to the world's vertices
+  // array, setting attributes, and pushing it to GL.
+  gl.bindBuffer(gl.ARRAY_BUFFER, models[2].vertexBufferObject);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, models[2].vertexBufferObject.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[2].indexBufferObject);
+
+  // Draw the cube.
+  setMatrixUniforms();
+  gl.drawElements(gl.TRIANGLES,models[2].indexBufferObject.numItems, gl.UNSIGNED_SHORT, 0);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, models[2].vertexBufferObject.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[2].indexBufferObject);
+}
+
+function drawRobots(){
+  for(var i in arrayRobots){
+    if(arrayRobots[i]){
+      //console.log("Drew robot");
+      mat4.identity(mvMatrix);
+      
+      mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
+      mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
+      
+      mat4.rotate(mvMatrix, degToRad(arrayRobots[i].yaw), [0, 0, 0]);
+  		mat4.translate(mvMatrix, [arrayRobots[i].xPosition, 0, arrayRobots[i].zPosition]);
+  		drawRobot();
+    }
+  }
+}
+function drawRobot(){
+  // Activate textures
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, models[1].texture);
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+  // Set the texture coordinates attribute for the vertices.
+  gl.bindBuffer(gl.ARRAY_BUFFER, models[1].textureCoordVertexBuffer);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, models[1].textureCoordVertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // Draw the world by binding the array buffer to the world's vertices
+  // array, setting attributes, and pushing it to GL.
+  gl.bindBuffer(gl.ARRAY_BUFFER, models[1].vertexBufferObject);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, models[1].vertexBufferObject.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[1].indexBufferObject);
+
+  // Draw the cube.
+  setMatrixUniforms();
+  gl.drawElements(gl.TRIANGLES,models[1].indexBufferObject.numItems, gl.UNSIGNED_SHORT, 0);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, models[1].vertexBufferObject.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[1].indexBufferObject);
+}
+
+
+function drawMap(){
+  
+  mat4.identity(mvMatrix);
+  
+  mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
+  mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
+
+	mat4.rotate(mvMatrix,degToRad(-90), [1,0,0]);
+	mat4.scale(mvMatrix, [12,12,12]);
+	mat4.translate(mvMatrix, [0, 0, 0.9]);
+  
+  // Activate textures
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, models[0].texture);
+  gl.uniform1i(shaderProgram.samplerUniform, 0);
+
+  // Set the texture coordinates attribute for the vertices.
+  gl.bindBuffer(gl.ARRAY_BUFFER, models[0].textureCoordVertexBuffer);
+  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, models[0].textureCoordVertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  // Draw the world by binding the array buffer to the world's vertices
+  // array, setting attributes, and pushing it to GL.
+  gl.bindBuffer(gl.ARRAY_BUFFER, models[0].vertexBufferObject);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, models[0].vertexBufferObject.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[0].indexBufferObject);
+
+  // Draw the cube.
+  setMatrixUniforms();
+  gl.drawElements(gl.TRIANGLES,models[0].indexBufferObject.numItems, gl.UNSIGNED_SHORT, 0);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, models[0].vertexBufferObject.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, models[0].indexBufferObject);
+
+  /*
+  // Draw the cube.
+  setMatrixUniforms();
+  gl.drawElements(gl.TRIANGLES,models[0].indexBufferObject.numItems, gl.UNSIGNED_SHORT, 0);*/
 }
 
 //
@@ -463,20 +689,6 @@ function handleKeyUp(event) {
 // input handling. Function continuisly updates helper variables.
 //
 function handleKeys() {
-  
-  //REMOVE IN FUTURE LEAVE FOR NOW FOR TESTING
-  /*
-  if (currentlyPressedKeys[33]) {
-    // Page Up
-    pitchRate = 0.1;
-  } else if (currentlyPressedKeys[34]) {
-    // Page Down
-    pitchRate = -0.1;
-  } else {
-    pitchRate = 0;
-  }
-  */
-  //END REMOVAL
   
   //Look left/right
   if (currentlyPressedKeys[81]) {
@@ -614,19 +826,23 @@ function start() {
     // vertices and so forth is established.
     initShaders();
     
+    //load models
+    loadModels("data/models/toLoad.txt");
+    
     // Next, load and set up the textures we'll be using.
-    initTextures();
+    //initTextures();
 
     // Initialise world objects
-    loadWorld();
+    //loadWorld();
 
     // Bind keyboard handling functions to document handlers
     document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
-    
+
     // Set up to draw the scene periodically.
     intervalID = setInterval(function() {
-      if (texturesLoaded) { // only draw scene and animate when textures are loaded.
+      if (loadedModels==0 && loadedTextures==0) { // only draw scene and animate when textures are loaded.
+        document.getElementById("loadingtext").textContent = "";
         requestAnimationFrame(animate);
         handleKeys();
         drawScene();
