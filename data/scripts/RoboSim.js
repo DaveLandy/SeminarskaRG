@@ -39,24 +39,24 @@ var joggingAngle = 0;
 var intervalID;
 
 //Robot (enemy) variables
-var respawnTime = 300; // respawn values when robots die
-var robotRespawnTimer = [150,99999999,99999999,99999999];
+var respawnTime = 200; // respawn values when robots die
+var robotRespawnTimer = [150,300,400,400];
 //var robotRespawnTimer = [150,1000,1500,1500]; // initial respawn values
 
 var arrayRobots = [null,null,null,null];
 function Robot(x,z) {
   this.xPosition = x;
-  this.yPosition = 0; //vertical position (not needed) maybe ce bos rabu premaknt objekt gor al pa dol David
+  this.yPosition = 0.9;
   this.zPosition = z;
   this.yaw = 0;
-  this.speed = 0.01; //increase this if (too easy)
+  this.speed = 0.02; //increase this if (too easy)
 }
 
 //Bullet variables
 var existsBullet = null;
 function Bullet(x,z,yaw) {
   this.xPosition = x;
-  this.yPosition = 0.5;
+  this.yPosition = 0.3;
   this.zPosition = z;
   this.yaw = yaw;
   this.speed = 0.05;
@@ -238,95 +238,11 @@ function setMatrixUniforms() {
 //
 // initTextures
 //
-// Initialize the textures we'll be using, then initiate a load of
-// the texture images. The handleTextureLoaded() callback will finish
-// the job; it gets called each time a texture finishes loading.
-//
-function initTextures() {
-  wallTexture = gl.createTexture();
-  wallTexture.image = new Image();
-  wallTexture.image.onload = function () {
-    handleTextureLoaded(wallTexture)
-  }
-  wallTexture.image.src = "data/textures/wall.png";
-}
-
-function handleTextureLoaded(texture) {
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-
-  // Third texture usus Linear interpolation approximation with nearest Mipmap selection
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.generateMipmap(gl.TEXTURE_2D);
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
-
-  // when texture loading is finished we can draw scene.
-  texturesLoaded = true;
-}
-
-//
-// handleLoadedWorld
-//
-// Initialisation of world 
-//
-function handleLoadedWorld(data) {
-  var lines = data.split("\n");
-  var vertexCount = 0;
-  var vertexPositions = [];
-  var vertexTextureCoords = [];
-  for (var i in lines) {
-    var vals = lines[i].replace(/^\s+/, "").split(/\s+/);
-    if (vals.length == 5 && vals[0] != "//") {
-      // It is a line describing a vertex; get X, Y and Z first
-      vertexPositions.push(parseFloat(vals[0]));
-      vertexPositions.push(parseFloat(vals[1]));
-      vertexPositions.push(parseFloat(vals[2]));
-
-      // And then the texture coords
-      vertexTextureCoords.push(parseFloat(vals[3]));
-      vertexTextureCoords.push(parseFloat(vals[4]));
-
-      vertexCount += 1;
-    }
-  }
-
-  worldVertexPositionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPositions), gl.STATIC_DRAW);
-  worldVertexPositionBuffer.itemSize = 3;
-  worldVertexPositionBuffer.numItems = vertexCount;
-
-  worldVertexTextureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexTextureCoords), gl.STATIC_DRAW);
-  worldVertexTextureCoordBuffer.itemSize = 2;
-  worldVertexTextureCoordBuffer.numItems = vertexCount;
-
-  document.getElementById("loadingtext").textContent = "";
-}
-
-//
-// loadWorld
-//
-// Loading world 
-//
-function loadWorld() {
-  var request = new XMLHttpRequest();
-  request.open("GET", "data/models/world.txt");
-  request.onreadystatechange = function () {
-    if (request.readyState == 4) {
-      handleLoadedWorld(request.responseText);
-    }
-  }
-  request.send();
-}
 
 var toLoad;
 var loadedModels;
 var loadedTextures;
+
 function loadModels(path) {
   var request = new XMLHttpRequest();
   request.open("GET", path);
@@ -383,7 +299,7 @@ function initModel(countModels) {
   request.open("GET", "data/models/"+oName);
   request.onreadystatechange = function () {
     if (request.readyState == 4) {
-      console.log(countModels);
+      //console.log(countModels);
       var object = JSON.parse(request.responseText);
       models[countModels].vertices = new Float32Array(object.meshes[0].vertices);
       models[countModels].texCoords = object.meshes[0].texturecoords[0];
@@ -449,25 +365,7 @@ function drawScene() {
   drawMap(); 
   drawRobots();
   drawBullets();
-  /*
-  // Activate textures
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, wallTexture);
-  gl.uniform1i(shaderProgram.samplerUniform, 0);
-
-  // Set the texture coordinates attribute for the vertices.
-  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexTextureCoordBuffer);
-  gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, worldVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  // Draw the world by binding the array buffer to the world's vertices
-  // array, setting attributes, and pushing it to GL.
-  gl.bindBuffer(gl.ARRAY_BUFFER, worldVertexPositionBuffer);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, worldVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-  // Draw the cube.
-  setMatrixUniforms();
-  gl.drawArrays(gl.TRIANGLES, 0, worldVertexPositionBuffer.numItems);
-  */
+  
 }
 
 function drawBullets() {
@@ -477,8 +375,8 @@ function drawBullets() {
     
     mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
     mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
-
-    //mat4.rotate(mvMatrix, degToRad(arrayRobots[i].yaw), [0, 0, 0]);
+    
+    //mat4.scale(mvMatrix, [0.5,0.5,0.5]);
 		mat4.translate(mvMatrix, [existsBullet.xPosition, 0, existsBullet.zPosition]);
 		drawBullet();
   }
@@ -517,8 +415,9 @@ function drawRobots(){
       mat4.rotate(mvMatrix, degToRad(-yaw), [0, 1, 0]);
       mat4.translate(mvMatrix, [-xPosition, -yPosition, -zPosition]);
       
+      //mat4.rotate(mvMatrix,degToRad(-90), [1,1,1]);
       mat4.rotate(mvMatrix, degToRad(arrayRobots[i].yaw), [0, 0, 0]);
-  		mat4.translate(mvMatrix, [arrayRobots[i].xPosition, 0, arrayRobots[i].zPosition]);
+  		mat4.translate(mvMatrix, [arrayRobots[i].xPosition, arrayRobots[i].yPosition, arrayRobots[i].zPosition]);
   		drawRobot();
     }
   }
@@ -789,6 +688,7 @@ function hud() {
 //call this when game is over
 function hudGameOver() {
   gameOver = true;
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   ctx.clearRect(0,0,1280,720);
   ctx.font="130px Arial";
   ctx.fillStyle = "#ff7500";
@@ -806,6 +706,8 @@ function hudGameOver() {
 // Called when the canvas is created to get the ball rolling.
 // Figuratively, that is. There's nothing moving in this demo.
 //
+
+var firstLoad = true;
 function start() {
   canvas = document.getElementById("glcanvas");
   //initiate HUD
@@ -829,12 +731,6 @@ function start() {
     //load models
     loadModels("data/models/toLoad.txt");
     
-    // Next, load and set up the textures we'll be using.
-    //initTextures();
-
-    // Initialise world objects
-    //loadWorld();
-
     // Bind keyboard handling functions to document handlers
     document.onkeydown = handleKeyDown;
     document.onkeyup = handleKeyUp;
@@ -842,7 +738,10 @@ function start() {
     // Set up to draw the scene periodically.
     intervalID = setInterval(function() {
       if (loadedModels==0 && loadedTextures==0) { // only draw scene and animate when textures are loaded.
-        document.getElementById("loadingtext").textContent = "";
+        if(firstLoad) {
+          firstLoad = false;
+          document.getElementById("loadingtext").textContent = "";
+        }
         requestAnimationFrame(animate);
         handleKeys();
         drawScene();
@@ -999,31 +898,32 @@ function recalculateYawRobots(i) {
 }
 
 function checkIfShot() {
-  var shotSensitivity = 0.5;
+  var shotSensitivity = 0.9;
+  var textureOffset = 1.1;
   if(existsBullet != null) {
     if(arrayRobots[0] != null) {
-      if(Math.abs(arrayRobots[0].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[0].zPosition - existsBullet.zPosition) < shotSensitivity) {
+      if(Math.abs(arrayRobots[0].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[0].zPosition - existsBullet.zPosition + textureOffset) < shotSensitivity) {
         destroyRobot(0);
         hitIndicatorAlpha = 1.0;
         //console.log("Robot 0 Destroyed");
       }
     }
     if(arrayRobots[1] != null) {
-      if(Math.abs(arrayRobots[1].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[1].zPosition - existsBullet.zPosition) < shotSensitivity) {
+      if(Math.abs(arrayRobots[1].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[1].zPosition - existsBullet.zPosition + textureOffset) < shotSensitivity) {
         destroyRobot(1);
         hitIndicatorAlpha = 1.0;
         //console.log("Robot 1 Destroyed");
       }
     }
     if(arrayRobots[2] != null) {
-      if(Math.abs(arrayRobots[2].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[2].zPosition - existsBullet.zPosition) < shotSensitivity) {
+      if(Math.abs(arrayRobots[2].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[2].zPosition - existsBullet.zPosition + textureOffset) < shotSensitivity) {
         destroyRobot(2);
         hitIndicatorAlpha = 1.0;
         //console.log("Robot 2 Destroyed");
       }
     }
     if(arrayRobots[3] != null) {
-      if(Math.abs(arrayRobots[3].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[3].zPosition - existsBullet.zPosition) < shotSensitivity) {
+      if(Math.abs(arrayRobots[3].xPosition - existsBullet.xPosition) < shotSensitivity && Math.abs(arrayRobots[3].zPosition - existsBullet.zPosition + textureOffset) < shotSensitivity) {
         destroyRobot(3);
         hitIndicatorAlpha = 1.0;
         //console.log("Robot 3 Destroyed");
